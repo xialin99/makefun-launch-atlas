@@ -28,7 +28,7 @@ export function validateSnapshot(snapshot) {
     requireValue(nonemptyText(protocol.name), 'name is missing for ' + protocol.slug);
     requireValue(finiteNonnegative(protocol.tvl_usd), 'invalid TVL for ' + protocol.slug);
     requireValue(
-      protocol.mcap_usd === null || finiteNonnegative(protocol.mcap_usd),
+      protocol.mcap_usd === null || protocol.mcap_usd === -1 || finiteNonnegative(protocol.mcap_usd),
       'invalid market capitalization for ' + protocol.slug,
     );
     requireValue(
