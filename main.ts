@@ -22,7 +22,7 @@ const rows=input.protocols.filter((p:any)=>p.tvl_usd>0).map((p:any)=>{
  const early=!p.gecko_id&&!p.symbol;
  const route=/lend|cdp/i.test(p.category??'')?'lending':/dex|derivative|option/i.test(p.category??'')?'trading':'application';
  const steps=[
-  `Locate ${p.name}'s official application from its verified project profile; confirm the network (${p.chains.join(', ')||'not supplied'}) and contract addresses before connecting a wallet.`,
+  `Locate ${p.name}'s official application from its verified project profile; confirm the network (${p.chains.slice(0,4).join(', ')||'not supplied'}) and contract addresses before connecting a wallet.`,
   `Check whether ${p.name} currently publishes an official points or eligibility program. This snapshot records ${early?'no token identifier':'an existing token identifier'}; it cannot establish a future token or reward.`,
   route==='lending'?`In the official lending interface, preview a minimal supply and withdrawal without submitting either. Record the asset, utilization, withdrawal constraints, liquidation rules and every fee before considering capital.`:route==='trading'?`In the official trading interface, preview one small swap or order without submitting it. Record price impact, trading fees, approvals, position exposure and the exact network cost.`:`Open the official application's onboarding guide and identify one genuine product action. Use a read-only preview or test network first; record permissions, fees and exit conditions.`,
   `Maintain a dated activity journal for ${p.name}: official campaign rules, supported chain, transaction purpose, quoted fees and withdrawal route. Recheck the official eligibility criteria before any future activity.`,
@@ -38,3 +38,4 @@ cpSync(join(here,'dashboard'),join(out,'dashboard'),{recursive:true});
 if(!existsSync(join(here,'screenshots/01-board.png'))){console.log(`Board ready: ${rows.length} protocols, ${input.watchlist.length} watchlist subjects. Dossier awaits three real browser screenshots.`);process.exit(0)}
 cpSync(join(here,'screenshots'),join(out,'screenshots'),{recursive:true});
 writeFileSync(join(out,'dossier.json'),buildDossier(out,{text_max_bytes:65536,screenshots:{max:4,max_bytes:524288},dashboard:{max_files:400,max_bytes:4194304}}));
+
