@@ -52,8 +52,10 @@ const metadata={as_of:input.as_of,source:input.source,watchlist_count:input.watc
 writeFileSync(join(out,'board.json'),JSON.stringify({rows})+'\n');
 writeFileSync(join(out,'data.js'),'window.RADAR='+JSON.stringify(metadata).replace(/</g,'\\u003c')+';\n');
 cpSync(join(here,'dashboard'),join(out,'dashboard'),{recursive:true});
-if(!existsSync(join(here,'screenshots/01-board.png'))){console.log(`Board ready: ${rows.length} protocols, ${input.watchlist.length} watchlist subjects. Dossier awaits three real browser screenshots.`);process.exit(1)}
-cpSync(join(here,'screenshots'),join(out,'screenshots'),{recursive:true});
-writeFileSync(join(out,'dossier.json'),buildDossier(out,{text_max_bytes:65536,screenshots:{max:4,max_bytes:524288},dashboard:{max_files:400,max_bytes:4194304}}));
-
-
+if(process.argv.includes('--preview')){
+ console.log('Preview ready: '+join(out,'dashboard','index.html'));
+}else{
+ if(!existsSync(join(here,'screenshots/01-board.png'))){console.log(`Board ready: ${rows.length} protocols, ${input.watchlist.length} watchlist subjects. Dossier awaits three real browser screenshots.`);process.exit(1)}
+ cpSync(join(here,'screenshots'),join(out,'screenshots'),{recursive:true});
+ writeFileSync(join(out,'dossier.json'),buildDossier(out,{text_max_bytes:65536,screenshots:{max:4,max_bytes:524288},dashboard:{max_files:400,max_bytes:4194304}}));
+}

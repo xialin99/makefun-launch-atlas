@@ -10,7 +10,7 @@ Every row includes a research plan that starts with official-source verification
 
 ## Run and package
 
-Use Node.js 22.18 or later. Run `node main.ts --input /path/to/snapshot.json --output ./out`, serve the output directory with a static server, and open `dashboard/index.html`. The competition supplies snapshot.json; no live API is called at runtime.
+Use Node.js 22.18 or later. Run `node main.ts --input /path/to/snapshot.json --output ./out --preview`, serve the output directory with a static server, and open `dashboard/index.html`. The competition supplies snapshot.json; no live API is called at runtime.
 
 The unmodified vendored dossier helper packages the dashboard source and real browser screenshots. Generated board.json and data.js belong in the output directory, outside the source tree.
 
