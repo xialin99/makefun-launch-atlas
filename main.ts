@@ -13,14 +13,28 @@ const median=(xs:number[])=>{const a=[...xs].sort((a,b)=>a-b);return a.length?a[
 const quantile=(xs:number[],q:number)=>{const a=[...xs].sort((a,b)=>a-b);return a[Math.min(a.length-1,Math.floor(q*a.length))]};
 const peers=input.protocols.filter((p:any)=>p.mcap_usd>0&&p.tvl_usd>0).map((p:any)=>({...p,multiple:p.mcap_usd/p.tvl_usd})).filter((p:any)=>p.multiple>=.01&&p.multiple<=50);
 const global=median(peers.map((p:any)=>p.multiple));
+function fitSizeCurve(reference: typeof peers) {
+ const samples=reference.map((peer:any)=>({x:Math.log(peer.tvl_usd),y:Math.log(peer.multiple)}));
+ const slopes:number[]=[];
+ for(let i=0;i<samples.length;i++)for(let j=i+1;j<samples.length;j++){
+  const dx=samples[j].x-samples[i].x;
+  if(Math.abs(dx)>=1)slopes.push((samples[j].y-samples[i].y)/dx);
+ }
+ const slope=slopes.length?median(slopes):0;
+ const intercept=samples.length?median(samples.map(({x,y}:any)=>y-slope*x)):Math.log(global);
+ const residuals=samples.map(({x,y}:any)=>y-intercept-slope*x);
+ return {slope,intercept,low:residuals.length?Math.min(0,quantile(residuals,.10)):0,high:residuals.length?Math.max(0,quantile(residuals,.90)):0};
+}
+const fullFit=fitSizeCurve(peers);
+const observedSlugs=new Set(peers.map((p:any)=>p.slug));
 const watch=new Set(input.watchlist);
 const rows=input.protocols.filter((p:any)=>p.tvl_usd>0).map((p:any)=>{
- const sector=peers.filter((a:any)=>a.category===p.category&&a.slug!==p.slug),n=sector.length;
- const category=median(sector.map((a:any)=>a.multiple));
- const shrink=n/(n+8),multiple=Math.exp(shrink*Math.log(category)+(1-shrink)*Math.log(global));
- const growth=Math.max(-50,Math.min(50,p.change_7d??0));
- const growthFactor=Math.exp(growth*.003),estimate=Math.round(Math.min(1e14,Math.max(1,p.tvl_usd*multiple*growthFactor)));
- const dispersion=sector.length>=4?Math.max(.5,Math.log(quantile(sector.map((a:any)=>a.multiple),.75)/quantile(sector.map((a:any)=>a.multiple),.25))):1.2;
+ const reference=observedSlugs.has(p.slug)?peers.filter((peer:any)=>peer.slug!==p.slug):peers;
+ const fit=reference===peers?fullFit:fitSizeCurve(reference);
+ const n=reference.length,logScale=Math.log(p.tvl_usd);
+ const multiple=Math.exp(fit.intercept+fit.slope*logScale);
+ const dollars=(logAdjustment:number)=>Math.round(Math.min(1e14,Math.max(1,p.tvl_usd*multiple*Math.exp(logAdjustment))));
+ const estimate=dollars(0);
  const early=!p.gecko_id&&!p.symbol;
  const route=/lend|cdp/i.test(p.category??'')?'lending':/dex|derivative|option/i.test(p.category??'')?'trading':'application';
  const steps=[
@@ -30,11 +44,11 @@ const rows=input.protocols.filter((p:any)=>p.tvl_usd>0).map((p:any)=>{
   `Maintain a dated activity journal for ${p.name}: official campaign rules, supported chain, transaction purpose, quoted fees and withdrawal route. Recheck the official eligibility criteria before any future activity.`,
   `Compare total cost and capital risk with a zero-reward outcome. Do not treat the model's implied value as a token allocation, a personal payout estimate or evidence that farming will be rewarded.`
  ];
- return {...p,rank:0,implied_value_usd:estimate,farm_steps:steps,watchlist:watch.has(p.slug),stage:early?'No token recorded':'Token recorded',multiple,peer_count:n,peer_names:sector.slice(0,8).map((a:any)=>a.name),growth_factor:growthFactor,value_low:Math.round(estimate*Math.exp(-dispersion)),value_high:Math.round(estimate*Math.exp(dispersion)),confidence:n>=12?'Moderate':n>=4?'Limited':'Low',explanation:`TVL × sector-adjusted market-cap/TVL multiple × bounded 7-day growth factor. ${n} sector peers; shrinkage weight ${Math.round(shrink*100)}%. This is an illustrative capitalization estimate, not FDV or a token-launch prediction.`};
+ return {...p,rank:0,implied_value_usd:estimate,farm_steps:steps,watchlist:watch.has(p.slug),stage:early?'No token recorded':'Token recorded',multiple,peer_count:n,peer_names:[...reference].sort((a:any,b:any)=>Math.abs(Math.log(a.tvl_usd)-logScale)-Math.abs(Math.log(b.tvl_usd)-logScale)).slice(0,8).map((peer:any)=>peer.name),value_low:dollars(fit.low),value_high:dollars(fit.high),confidence:n>=50?'Moderate':'Limited',explanation:`TVL × the market-cap/TVL multiple fitted at this scale from ${n} tokenized peers. The central fit uses median pairwise slopes in log space. The range applies the 10th and 90th percentiles of observed peer residuals.`};
 }).sort((a:any,b:any)=>b.implied_value_usd-a.implied_value_usd||a.slug.localeCompare(b.slug));
 rows.forEach((r:any,i:number)=>r.rank=i+1);
 validateBoard(rows,input);
-const metadata={as_of:input.as_of,source:input.source,watchlist_count:input.watchlist.length,global_multiple:global,peer_count:peers.length,model:'Sector-comparable market capitalization / TVL with log-space shrinkage (8 global pseudo-peers), bounded ±50% weekly TVL growth adjustment. Ranges reflect peer dispersion, not calibrated probabilities.',rows};
+const metadata={as_of:input.as_of,source:input.source,watchlist_count:input.watchlist.length,global_multiple:global,peer_count:peers.length,model:'Robust log-scale fit of observed market capitalization / TVL versus TVL. Scenarios use the central 80% of peer residuals.',rows};
 writeFileSync(join(out,'board.json'),JSON.stringify({rows})+'\n');
 writeFileSync(join(out,'data.js'),'window.RADAR='+JSON.stringify(metadata).replace(/</g,'\\u003c')+';\n');
 cpSync(join(here,'dashboard'),join(out,'dashboard'),{recursive:true});
