@@ -11,19 +11,51 @@ validateSnapshot(input);
 const out=arg('output',process.env.MAKEFUN_OUTPUT_DIR??'/output');mkdirSync(out,{recursive:true});
 const median=(xs:number[])=>{const a=[...xs].sort((a,b)=>a-b);return a.length?a[Math.floor(a.length/2)]:1};
 const quantile=(xs:number[],q:number)=>{const a=[...xs].sort((a,b)=>a-b);return a[Math.min(a.length-1,Math.floor(q*a.length))]};
-const peers=input.protocols.filter((p:any)=>p.mcap_usd>0&&p.tvl_usd>0).map((p:any)=>({...p,multiple:p.mcap_usd/p.tvl_usd})).filter((p:any)=>p.multiple>=.01&&p.multiple<=50);
-const global=median(peers.map((p:any)=>p.multiple));
-function fitSizeCurve(reference: typeof peers) {
- const samples=reference.map((peer:any)=>({x:Math.log(peer.tvl_usd),y:Math.log(peer.multiple)}));
- const slopes:number[]=[];
- for(let i=0;i<samples.length;i++)for(let j=i+1;j<samples.length;j++){
-  const dx=samples[j].x-samples[i].x;
-  if(Math.abs(dx)>=1)slopes.push((samples[j].y-samples[i].y)/dx);
+type Peer = {
+ slug: string;
+ name: string;
+ multiple: number;
+ logTvl: number;
+ logMultiple: number;
+};
+
+const peers: Peer[] = [];
+for (const protocol of input.protocols) {
+ if (!(protocol.mcap_usd > 0 && protocol.tvl_usd > 0)) continue;
+ const multiple = protocol.mcap_usd / protocol.tvl_usd;
+ if (multiple < 0.01 || multiple > 50) continue;
+ peers.push({
+  slug: protocol.slug,
+  name: protocol.name,
+  multiple,
+  logTvl: Math.log(protocol.tvl_usd),
+  logMultiple: Math.log(multiple),
+ });
+}
+const global = median(peers.map(peer => peer.multiple));
+
+function fitSizeCurve(reference: Peer[]) {
+ if (reference.length === 0) {
+  return { slope: 0, intercept: Math.log(global), low: 0, high: 0 };
  }
- const slope=slopes.length?median(slopes):0;
- const intercept=samples.length?median(samples.map(({x,y}:any)=>y-slope*x)):Math.log(global);
- const residuals=samples.map(({x,y}:any)=>y-intercept-slope*x);
- return {slope,intercept,low:residuals.length?Math.min(0,quantile(residuals,.10)):0,high:residuals.length?Math.max(0,quantile(residuals,.90)):0};
+ const slopes: number[] = [];
+ for (const [index, lower] of reference.entries()) {
+  for (let next = index + 1; next < reference.length; next++) {
+   const upper = reference[next];
+   const logTvlDifference = upper.logTvl - lower.logTvl;
+   if (Math.abs(logTvlDifference) < 1) continue;
+   slopes.push((upper.logMultiple - lower.logMultiple) / logTvlDifference);
+  }
+ }
+ const slope = slopes.length ? median(slopes) : 0;
+ const intercept = median(reference.map(peer => peer.logMultiple - slope * peer.logTvl));
+ const residuals = reference.map(peer => peer.logMultiple - intercept - slope * peer.logTvl);
+ return {
+  slope,
+  intercept,
+  low: Math.min(0, quantile(residuals, 0.1)),
+  high: Math.max(0, quantile(residuals, 0.9)),
+ };
 }
 const fullFit=fitSizeCurve(peers);
 const observedSlugs=new Set(peers.map((p:any)=>p.slug));
@@ -44,7 +76,7 @@ const rows=input.protocols.filter((p:any)=>p.tvl_usd>0).map((p:any)=>{
   `Maintain a dated activity journal for ${p.name}: official campaign rules, supported chain, transaction purpose, quoted fees and withdrawal route. Recheck the official eligibility criteria before any future activity.`,
   `Compare total cost and capital risk with a zero-reward outcome. Do not treat the model's implied value as a token allocation, a personal payout estimate or evidence that farming will be rewarded.`
  ];
- return {...p,rank:0,implied_value_usd:estimate,farm_steps:steps,watchlist:watch.has(p.slug),stage:early?'No token recorded':'Token recorded',multiple,peer_count:n,peer_names:[...reference].sort((a:any,b:any)=>Math.abs(Math.log(a.tvl_usd)-logScale)-Math.abs(Math.log(b.tvl_usd)-logScale)).slice(0,8).map((peer:any)=>peer.name),value_low:dollars(fit.low),value_high:dollars(fit.high),confidence:n>=50?'Moderate':'Limited',explanation:`TVL × the market-cap/TVL multiple fitted at this scale from ${n} tokenized peers. The central fit uses median pairwise slopes in log space. The range applies the 10th and 90th percentiles of observed peer residuals.`};
+ return {...p,rank:0,implied_value_usd:estimate,farm_steps:steps,watchlist:watch.has(p.slug),stage:early?'No token recorded':'Token recorded',multiple,peer_count:n,peer_names:[...reference].sort((a:any,b:any)=>Math.abs(a.logTvl-logScale)-Math.abs(b.logTvl-logScale)).slice(0,8).map((peer:any)=>peer.name),value_low:dollars(fit.low),value_high:dollars(fit.high),confidence:n>=50?'Moderate':'Limited',explanation:`TVL × the market-cap/TVL multiple fitted at this scale from ${n} tokenized peers. The central fit uses median pairwise slopes in log space. The range applies the 10th and 90th percentiles of observed peer residuals.`};
 }).sort((a:any,b:any)=>b.implied_value_usd-a.implied_value_usd||a.slug.localeCompare(b.slug));
 rows.forEach((r:any,i:number)=>r.rank=i+1);
 validateBoard(rows,input);
@@ -55,7 +87,8 @@ cpSync(join(here,'dashboard'),join(out,'dashboard'),{recursive:true});
 if(process.argv.includes('--preview')){
  console.log('Preview ready: '+join(out,'dashboard','index.html'));
 }else{
- if(!existsSync(join(here,'screenshots/01-board.png'))){console.log(`Board ready: ${rows.length} protocols, ${input.watchlist.length} watchlist subjects. Dossier awaits three real browser screenshots.`);process.exit(1)}
+ const requiredScreenshots=['01-board.jpg','02-watchlist.jpg','03-detail.jpg'];
+ if(requiredScreenshots.some(name=>!existsSync(join(here,'screenshots',name))))throw new Error('The dossier needs captures of the board, watchlist, and protocol detail.');
  cpSync(join(here,'screenshots'),join(out,'screenshots'),{recursive:true});
  writeFileSync(join(out,'dossier.json'),buildDossier(out,{text_max_bytes:65536,screenshots:{max:4,max_bytes:524288},dashboard:{max_files:400,max_bytes:4194304}}));
 }

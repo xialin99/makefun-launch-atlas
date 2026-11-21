@@ -1,21 +1,38 @@
 # Launch Atlas
 
-An offline research dashboard built from the make.fun protocol snapshot. It ranks 758 protocols and covers all 40 entries on the supplied launch watchlist.
+[中文](#中文) · [English](#english)
 
-## Model
+![Preview](screenshots/01-board.jpg)
 
-Implied capitalization equals TVL multiplied by a market-cap/TVL ratio fitted at that scale. The model uses the median of pairwise slopes in log space for peer pairs at least one log unit apart. A priced protocol is excluded from its own fit. Displayed scenarios apply the 10th and 90th percentiles of peer residuals. The model uses the supplied snapshot.
+## 中文
 
-Every row includes a research plan that starts with official-source verification and read-only previews. No wallet connection or transaction is performed by this application.
+离线协议研究看板，按赛事快照展示指标、分层排序和观察名单。
 
-## Run and package
+### 本地运行
 
-Use Node.js 22.18 or later. Run `node main.ts --input /path/to/snapshot.json --output ./out --preview`, serve the output directory with a static server, and open `dashboard/index.html`. The competition supplies snapshot.json; no live API is called at runtime.
+使用 Node.js 22.18 或更新版本。运行 `node main.ts --input <snapshot.json> --output <输出目录>` 生成看板。输入快照由赛事或使用者提供。
 
-The unmodified vendored dossier helper packages the dashboard source and real browser screenshots. Generated board.json and data.js belong in the output directory, outside the source tree.
+运行 `node main.ts --input examples/snapshot.json --output out --preview` 可以用模拟数据试用，完成后用浏览器打开 `out/dashboard/index.html`。
 
-## Evidence
+## English
 
-Structural checks verify unique protocol slugs, ordered positive integer estimates, consecutive ranks, all 40 watchlist subjects and bounded research-step lengths. The browser rendered all 758 results; selecting Watchlist only returned exactly 40, and a row opened its protocol detail. The submitted version’s four unedited browser screenshots show the full board, filtered watchlist, detail and research-plan area at 1440 by 900 pixels. Each is below 512 KiB.
+An offline protocol research dashboard that ranks and explores entries from a supplied data snapshot.
 
-The platform passed the submission’s validity gate. In leave-one-protocol-out validation on the 116 eligible tokenized peers, the mean absolute log error was 1.334 for the size-based model, 1.502 for the previous sector-and-growth model and 1.500 for a global-median baseline. This diagnostic covers observed market-cap/TVL ratios from the snapshot. It provides no direct test of future launch valuations. No prize has been received. MIT licensed; see LICENSE and the retained notice in the vendored helper.
+### Run locally
+
+Use Node.js 22.18 or newer. Run `node main.ts --input <snapshot.json> --output <output-dir>` to build the dashboard from a challenge-format snapshot.
+
+Run `node main.ts --input examples/snapshot.json --output out --preview` with the included synthetic snapshot, then open `out/dashboard/index.html`.
+
+[补充技术说明 / Additional technical notes](README.details.md)
+
+[make.fun 赛事 / Original bounty](https://make.fun/bounty/token-radar-01)
+
+## 许可证 / License
+
+MIT. See [LICENSE](LICENSE).
+
+赛事模板组件的授权见 [LICENSE-makefun.txt](LICENSE-makefun.txt)。
+
+Kit components are covered by [LICENSE-makefun.txt](LICENSE-makefun.txt).
+
