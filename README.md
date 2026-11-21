@@ -6,6 +6,19 @@
 
 ## 中文
 
+### 第一次使用
+
+安装 [Node.js 的 LTS 长期支持版](https://nodejs.org/en/download)（22.18 或更新）。
+
+1. 在仓库页面点 **Code → Download ZIP**，下载并解压。打开解压后含有 `main.ts` 的文件夹。
+2. 在 Windows 文件资源管理器地址栏输入 `powershell` 后按回车。把下面的命令复制到打开的窗口并回车。
+
+```sh
+node main.ts --input examples/snapshot.json --output out --preview
+```
+
+打开新生成的 `out/dashboard/index.html`，先点击列表中任意一行查看详情。示例用虚构数据，可以试用搜索、类别和观察名单。
+
 离线协议研究看板，按赛事快照展示指标、分层排序和观察名单。
 
 ### 本地运行
@@ -19,6 +32,19 @@
 命令行提示默认显示中文。设置 `MAKEFUN_UI_LANG=en` 可显示英文。
 
 ## English
+
+### First use
+
+Install the [Node.js LTS release](https://nodejs.org/en/download), version 22.18 or newer.
+
+1. Choose **Code → Download ZIP**, extract it, then open the extracted project folder.
+2. On Windows, type `powershell` in the File Explorer address bar and press Enter. Run the commands below.
+
+```sh
+node main.ts --input examples/snapshot.json --output out --preview
+```
+
+打开新生成的 `out/dashboard/index.html`，先点击列表中任意一行查看详情。示例用虚构数据，可以试用搜索、类别和观察名单。
 
 An offline protocol research dashboard that ranks and explores entries from a supplied data snapshot.
 
