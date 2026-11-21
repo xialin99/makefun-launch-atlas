@@ -85,7 +85,7 @@ writeFileSync(join(out,'board.json'),JSON.stringify({rows})+'\n');
 writeFileSync(join(out,'data.js'),'window.RADAR='+JSON.stringify(metadata).replace(/</g,'\\u003c')+';\n');
 cpSync(join(here,'dashboard'),join(out,'dashboard'),{recursive:true});
 if(process.argv.includes('--preview')){
- console.log('Preview ready: '+join(out,'dashboard','index.html'));
+ console.log((process.env.MAKEFUN_UI_LANG==='en'?'Preview ready: ':'看板已生成：')+join(out,'dashboard','index.html'));
 }else{
  const requiredScreenshots=['01-board.jpg','02-watchlist.jpg','03-detail.jpg'];
  if(requiredScreenshots.some(name=>!existsSync(join(here,'screenshots',name))))throw new Error('The dossier needs captures of the board, watchlist, and protocol detail.');

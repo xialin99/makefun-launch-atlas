@@ -14,6 +14,10 @@
 
 运行 `node main.ts --input examples/snapshot.json --output out --preview` 可以用模拟数据试用，完成后用浏览器打开 `out/dashboard/index.html`。
 
+看板默认显示中文，右上角可切换语言。
+
+命令行提示默认显示中文。设置 `MAKEFUN_UI_LANG=en` 可显示英文。
+
 ## English
 
 An offline protocol research dashboard that ranks and explores entries from a supplied data snapshot.
@@ -24,7 +28,11 @@ Use Node.js 22.18 or newer. Run `node main.ts --input <snapshot.json> --output <
 
 Run `node main.ts --input examples/snapshot.json --output out --preview` with the included synthetic snapshot, then open `out/dashboard/index.html`.
 
-[补充技术说明 / Additional technical notes](README.details.md)
+The dashboard opens in Simplified Chinese. Use the language menu in the upper right to switch.
+
+Set `MAKEFUN_UI_LANG=en` for English terminal messages.
+
+[中文技术说明](README.details.zh.md) · [English technical notes](README.details.md)
 
 [make.fun 赛事 / Original bounty](https://make.fun/bounty/token-radar-01)
 
