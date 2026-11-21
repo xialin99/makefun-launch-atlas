@@ -1,4 +1,4 @@
-# Launch Atlas
+# 项目研究图谱 / Launch Atlas
 
 [中文](#中文) · [English](#english)
 
